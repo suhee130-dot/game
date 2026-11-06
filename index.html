@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Neon Arcade</title>
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;min-height:100%;background:#06030f;color:#fff;font-family:system-ui,-apple-system,"Apple SD Gothic Neo",sans-serif;overflow-x:hidden}
+  #bg{position:fixed;inset:0;z-index:0}
+  main{position:relative;z-index:1;max-width:1180px;margin:0 auto;padding:56px 16px 40px;text-align:center}
+  h1{margin:0;font:italic 900 clamp(48px,9vw,104px)/1 system-ui;letter-spacing:-2px;
+     background:linear-gradient(90deg,#0ff,#f0f,#ff0,#0ff);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;
+     animation:flow 6s linear infinite, float 3s ease-in-out infinite;filter:drop-shadow(0 0 24px rgba(255,0,255,.45))}
+  .sub{margin:14px 0 48px;color:#b9b3e6;font-size:18px;letter-spacing:.3em;animation:fade 1s .3s both}
+  @keyframes flow{to{background-position:300% 0}}
+  @keyframes float{50%{transform:translateY(-8px)}}
+  @keyframes fade{from{opacity:0;transform:translateY(10px)}}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:28px;perspective:1200px}
+  .card{--c:#0ff;position:relative;display:block;text-decoration:none;color:#fff;border-radius:22px;overflow:hidden;background:#100a26;border:1px solid rgba(255,255,255,.08);
+        transform-style:preserve-3d;transition:transform .15s ease-out, box-shadow .3s;animation:rise .8s cubic-bezier(.2,1.4,.4,1) both;box-shadow:0 10px 40px rgba(0,0,0,.5)}
+  .card:nth-child(2){animation-delay:.12s}.card:nth-child(3){animation-delay:.24s}
+  @keyframes rise{from{opacity:0;transform:translateY(60px) rotateX(25deg) scale(.9)}}
+  .card:hover{box-shadow:0 0 0 2px var(--c),0 0 60px -10px var(--c),0 20px 60px rgba(0,0,0,.6)}
+  .card canvas{display:block;width:100%;height:240px}
+  .info{padding:20px 86px 24px 22px;text-align:left;transform:translateZ(30px)}
+  .tag{display:inline-block;font:800 11px system-ui;letter-spacing:.15em;padding:4px 10px;border-radius:20px;background:color-mix(in srgb,var(--c) 22%,transparent);color:var(--c);margin-bottom:10px}
+  .info h2{margin:0 0 6px;font:italic 900 32px system-ui}
+  .info p{margin:0;color:#c8c3ea;font-size:15px;line-height:1.5}
+  .play{position:absolute;right:20px;bottom:22px;width:54px;height:54px;border-radius:50%;background:var(--c);display:grid;place-items:center;color:#000;font-size:22px;
+        box-shadow:0 0 24px var(--c);transform:translateZ(50px);transition:transform .2s}
+  .card:hover .play{transform:translateZ(50px) scale(1.15)}
+  .card::after{content:"";position:absolute;inset:0;background:linear-gradient(115deg,transparent 40%,rgba(255,255,255,.18) 50%,transparent 60%);transform:translateX(-100%);transition:transform .7s;pointer-events:none}
+  .card:hover::after{transform:translateX(100%)}
+  footer{margin-top:40px;color:#7f78ad;font-size:13px}
+</style>
+</head>
+<body>
+<canvas id="bg"></canvas>
+<main>
+  <h1>NEON ARCADE</h1>
+  <div class="sub">PICK YOUR GAME</div>
+  <div class="grid">
+    <a class="card" href="shooter.html" style="--c:#3ef" data-g="shooter"><canvas></canvas>
+      <div class="info"><span class="tag">SHOOTER</span><h2>Sky Blaze</h2><p>전투기를 몰고 적의 웨이브와 보스를 격파하는 종스크롤 슈팅</p></div><div class="play">▶</div></a>
+    <a class="card" href="runner.html" style="--c:#f4c" data-g="runner"><canvas></canvas>
+      <div class="info"><span class="tag">RUNNER</span><h2>Neon Dash</h2><p>비트에 맞춰 질주! 2단 점프로 가시와 톱날을 피하는 리듬 러너</p></div><div class="play">▶</div></a>
+    <a class="card" href="breaker.html" style="--c:#fd3" data-g="breaker"><canvas></canvas>
+      <div class="info"><span class="tag">BRICK BREAKER</span><h2>Prism Breaker</h2><p>공을 튕겨 빛나는 벽돌을 산산조각! 멀티볼·레이저·관통 파워업</p></div><div class="play">▶</div></a>
+  </div>
+  <footer>각 게임에서 Esc 또는 ← 메뉴 버튼으로 돌아올 수 있어요</footer>
+</main>
+<script>
+// background starfield
+const bg=document.getElementById('bg'), b=bg.getContext('2d');
+let stars=[];
+function rs(){ bg.width=innerWidth; bg.height=innerHeight; stars=[...Array(160)].map(()=>({x:Math.random()*bg.width,y:Math.random()*bg.height,z:Math.random()})); }
+addEventListener('resize',rs); rs();
+let mx=0,my=0; addEventListener('pointermove',e=>{mx=e.clientX/innerWidth-.5;my=e.clientY/innerHeight-.5;});
+let T=0;
+function bgLoop(t){ T=t/1000; const w=bg.width,h=bg.height;
+  const g=b.createRadialGradient(w/2,h*.2,0,w/2,h*.2,Math.max(w,h)); g.addColorStop(0,`hsl(${280+Math.sin(T*.3)*30},60%,16%)`); g.addColorStop(1,'#05020d'); b.fillStyle=g; b.fillRect(0,0,w,h);
+  for(const s of stars){ s.y+=(.2+s.z*1.6); if(s.y>h){s.y=0;s.x=Math.random()*w;} b.fillStyle=`rgba(255,255,255,${.2+s.z*.7})`; b.fillRect(s.x-mx*s.z*40,s.y-my*s.z*40,1+s.z*1.5,1+s.z*3); }
+  requestAnimationFrame(bgLoop); }
+requestAnimationFrame(bgLoop);
+
+// card tilt
+document.querySelectorAll('.card').forEach(c=>{
+  c.addEventListener('pointermove',e=>{ const r=c.getBoundingClientRect(); const x=(e.clientX-r.left)/r.width-.5, y=(e.clientY-r.top)/r.height-.5; c.style.transform=`rotateY(${x*14}deg) rotateX(${-y*14}deg) translateZ(10px)`; });
+  c.addEventListener('pointerleave',()=>c.style.transform='');
+});
+
+// animated previews
+const previews=[...document.querySelectorAll('.card')].map(card=>{ const cv=card.querySelector('canvas'); return {card,cv,ctx:cv.getContext('2d'),g:card.dataset.g,st:{}}; });
+function sizePrev(){ previews.forEach(p=>{ const r=p.cv.getBoundingClientRect(), d=Math.min(devicePixelRatio||1,2); p.cv.width=r.width*d; p.cv.height=r.height*d; p.d=d; p.w=r.width; p.h=r.height; }); }
+addEventListener('resize',sizePrev); sizePrev();
+const TAU=Math.PI*2;
+function drawShooter(c,w,h,t,s){
+  const g=c.createLinearGradient(0,0,0,h); g.addColorStop(0,'#0b0530'); g.addColorStop(1,'#3a0f4a'); c.fillStyle=g; c.fillRect(0,0,w,h);
+  for(let i=0;i<50;i++){ const y=((i*53+t*200*(.3+(i%5)/5))%h), x=(i*97)%w; c.fillStyle='rgba(255,255,255,.6)'; c.fillRect(x,y,1.5,3+(i%5)*2); }
+  const px=w/2+Math.sin(t*1.4)*w*.25, py=h-50;
+  c.globalCompositeOperation='lighter';
+  for(let k=0;k<8;k++){ const by=py-30-((t*500+k*45)%(h)); c.fillStyle='rgba(80,230,255,.9)'; c.fillRect(px-5,by,3,14); c.fillRect(px+3,by,3,14); }
+  for(let k=0;k<4;k++){ const ex=w*(.2+k*.2)+Math.sin(t*2+k)*20, ey=40+Math.sin(t*3+k)*10; const boom=(t*1.2+k*.25)%1;
+    if(boom<.75){ c.fillStyle=`hsl(${300+k*20},90%,60%)`; c.beginPath(); c.moveTo(ex,ey+12); c.lineTo(ex+14,ey-6); c.lineTo(ex,ey); c.lineTo(ex-14,ey-6); c.fill(); }
+    else { const r=(boom-.75)*4; c.strokeStyle=`rgba(255,200,100,${1-r})`; c.lineWidth=3; c.beginPath(); c.arc(ex,ey,r*40,0,TAU); c.stroke(); c.fillStyle=`rgba(255,240,180,${1-r})`; c.beginPath(); c.arc(ex,ey,(1-r)*16,0,TAU); c.fill(); } }
+  c.globalCompositeOperation='source-over';
+  c.save(); c.translate(px,py); c.scale(1-Math.abs(Math.cos(t*1.4))*.3,1); c.shadowColor='#3ef'; c.shadowBlur=16; c.fillStyle='#bff';
+  c.beginPath(); c.moveTo(0,-24); c.lineTo(6,-6); c.lineTo(26,10); c.lineTo(6,10); c.lineTo(5,18); c.lineTo(-5,18); c.lineTo(-6,10); c.lineTo(-26,10); c.lineTo(-6,-6); c.fill();
+  c.fillStyle=`rgba(80,220,255,${.6+Math.random()*.4})`; c.beginPath(); c.ellipse(0,26,5,8+Math.random()*4,0,0,TAU); c.fill(); c.restore();
+}
+function drawRunner(c,w,h,t){
+  const GY=h*.72; const g=c.createLinearGradient(0,0,0,GY); g.addColorStop(0,'#12032a'); g.addColorStop(1,'#c2187a'); c.fillStyle=g; c.fillRect(0,0,w,h);
+  const sr=55+Math.pow((Math.sin(t*8)+1)/2,4)*6; c.fillStyle='#ffcf5a'; c.shadowColor='#f60'; c.shadowBlur=40; c.beginPath(); c.arc(w*.7,GY-20,sr,0,TAU); c.fill(); c.shadowBlur=0;
+  c.fillStyle='#1a0630'; for(let i=0;i<20;i++){ const bx=((i*47-t*60)%(w+60)+w+60)%(w+60)-30, bh=20+(i*37)%60; c.fillRect(bx,GY-bh,36,bh); }
+  c.fillStyle='#08021a'; c.fillRect(0,GY,w,h-GY); c.strokeStyle='rgba(0,255,255,.4)';
+  for(let i=-10;i<=10;i++){ c.beginPath(); c.moveTo(w/2+i*20,GY); c.lineTo(w/2+i*90,h); c.stroke(); }
+  c.fillStyle='#0ff'; c.shadowColor='#0ff'; c.shadowBlur=12; c.fillRect(0,GY-2,w,3); c.shadowBlur=0;
+  const sp=(t*260)%(w+100); const spx=w+50-sp; c.fillStyle='#ff3b6b'; c.beginPath(); c.moveTo(spx,GY); c.lineTo(spx+12,GY-24); c.lineTo(spx+24,GY); c.fill();
+  const px=w*.28, dx=spx-px; let jy=0, rot=0; if(dx<90&&dx>-60){ const k=(90-dx)/150; jy=Math.sin(k*Math.PI)*70; rot=k*Math.PI; }
+  for(let i=0;i<8;i++){ c.fillStyle=`hsla(${300+i*8},100%,60%,${i/16})`; c.fillRect(px-14-(8-i)*8,GY-28-jy+(8-i)*0,22,22); }
+  c.save(); c.translate(px,GY-14-jy); c.rotate(rot); c.shadowColor='#f0f'; c.shadowBlur=20; c.fillStyle='#ff5ef0'; c.fillRect(-14,-14,28,28); c.fillStyle='#fff'; c.fillRect(-8,-8,16,16); c.fillStyle='#401040'; c.fillRect(-5,-5,10,10); c.restore();
+}
+function drawBreaker(c,w,h,t,s){
+  c.fillStyle='#050a1c'; c.fillRect(0,0,w,h);
+  if(!s.b){ s.b=[]; for(let r=0;r<4;r++) for(let k=0;k<8;k++) s.b.push({r,k,alive:1,dead:0}); s.ball={x:w/2,y:h-60,vx:150,vy:-190}; }
+  const bw=(w-40)/8;
+  const ball=s.ball; const dt=1/60; ball.x+=ball.vx*dt; ball.y+=ball.vy*dt;
+  if(ball.x<8||ball.x>w-8) ball.vx*=-1; if(ball.y<8) ball.vy*=-1;
+  const padX=clamp(ball.x,40,w-40); if(ball.y>h-34&&ball.vy>0){ ball.vy*=-1; }
+  for(const br of s.b){ const x=20+br.k*bw, y=24+br.r*22; if(br.alive){ if(ball.x>x&&ball.x<x+bw-4&&ball.y>y&&ball.y<y+18){ br.alive=0; br.dead=1; ball.vy*=-1; } }
+    if(br.alive){ c.fillStyle=`hsl(${br.r*50+t*30},90%,58%)`; c.shadowColor=c.fillStyle; c.shadowBlur=8; c.fillRect(x,y,bw-4,18); c.shadowBlur=0; }
+    else if(br.dead>0){ br.dead-=dt*1.5; c.globalAlpha=Math.max(0,br.dead); c.fillStyle=`hsl(${br.r*50},90%,70%)`; const e=1-br.dead; for(let i=0;i<4;i++) c.fillRect(x+i*bw/4+(i-1.5)*e*20, y+e*e*80, bw/4-4, 9); c.globalAlpha=1; } }
+  if(s.b.every(b=>!b.alive&&b.dead<=0)) s.b.forEach(b=>{b.alive=1;b.dead=0;});
+  c.shadowColor='#4df'; c.shadowBlur=18; c.fillStyle='#4df'; c.fillRect(padX-40,h-30,80,10);
+  c.fillStyle='#fff'; c.beginPath(); c.arc(ball.x,ball.y,7,0,TAU); c.fill(); c.shadowBlur=0;
+}
+const clamp=(v,a,b)=>v<a?a:v>b?b:v;
+function prevLoop(now){ const t=now/1000; for(const p of previews){ const c=p.ctx; c.setTransform(p.d,0,0,p.d,0,0); if(p.g==='shooter') drawShooter(c,p.w,p.h,t,p.st); else if(p.g==='runner') drawRunner(c,p.w,p.h,t); else drawBreaker(c,p.w,p.h,t,p.st); } requestAnimationFrame(prevLoop); }
+requestAnimationFrame(prevLoop);
+</script>
+</body>
+</html>
